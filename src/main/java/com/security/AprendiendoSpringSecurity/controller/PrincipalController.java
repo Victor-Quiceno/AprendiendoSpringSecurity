@@ -7,6 +7,7 @@ import com.security.AprendiendoSpringSecurity.models.UserEntity;
 import com.security.AprendiendoSpringSecurity.repositories.UserRepository;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Set;
@@ -15,8 +16,12 @@ import java.util.stream.Collectors;
 @RestController
 public class PrincipalController {
 
+    // Inyectar dependencia del PasswordEncoder, no podemos enviar las contraseñas a la bd sin encriptación
+    private final PasswordEncoder passwordEncoder;
+
     private final UserRepository userRepository;
-    public PrincipalController(UserRepository userRepository){
+    public PrincipalController(PasswordEncoder passwordEncoder,UserRepository userRepository){
+        this.passwordEncoder = passwordEncoder;
         this.userRepository = userRepository;
     }
 
@@ -47,7 +52,7 @@ public class PrincipalController {
            permitiendonos construír el objeto por partes */
         UserEntity userEntity = UserEntity.builder()
                 .username(createUserDTO.getUsername())
-                .password(createUserDTO.getPassword())
+                .password(passwordEncoder.encode(createUserDTO.getPassword()))      // Encriptamos la contraseña al momento de asignarla al objeto
                 .email(createUserDTO.getEmail())
                 .roles(roles)
                 .build();

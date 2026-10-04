@@ -1,5 +1,6 @@
 package com.security.AprendiendoSpringSecurity.config;
 
+import com.security.AprendiendoSpringSecurity.service.UserDetailsServiceImpl;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -11,6 +12,7 @@ import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
@@ -21,6 +23,12 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+
+    private final UserDetailsServiceImpl userDetailsService;
+
+    public SecurityConfig(UserDetailsServiceImpl userDetailsService){
+        this.userDetailsService = userDetailsService;
+    }
 
     // Esta es la configuración de seguridad.
     @Bean
@@ -87,24 +95,25 @@ public class SecurityConfig {
     }
 
     // Esto es un usuario en memoria para hacer pruebas
-    @Bean
-    UserDetailsService userDetailsService(){
-        InMemoryUserDetailsManager manager = new InMemoryUserDetailsManager();
-        manager.createUser(User.withUsername("victor")
-                .password("123")
-                .roles()
-                .build());
-
-        return manager;
-    }
+//    @Bean
+//    UserDetailsService userDetailsService(){
+//        InMemoryUserDetailsManager manager = new InMemoryUserDetailsManager();
+//        manager.createUser(User.withUsername("victor")
+//                .password("123")
+//                .roles()
+//                .build());
+//
+//        return manager;
+//    }
 
     // Objeto que se encarga de la administración de la autenticación de los usuarios
     // Necesita un password encoder porque Spring Security necesita que encriptemos las contraseñas
     @Bean
     PasswordEncoder passwordEncoder(){
-        return NoOpPasswordEncoder.getInstance(); // Como todavía no vamos a manejar encriptación, retornamos esta instancia
+        return new BCryptPasswordEncoder(); // Algoritmo de encriptación de una sola vía
     }
 
+    // Este es el "Gerente de autenticación", es quien se encarga de toda la autenticación, la SecurityFilterChain pone las reglas y recolecta datos, pero to do se lo pasa a este gerente
     @Bean
     AuthenticationManager authenticationManager(HttpSecurity httpSecurity, PasswordEncoder passwordEncoder) throws Exception{
         // En la versión nueva, no podemos encadenar to do hasta el .build() directamente
@@ -114,7 +123,7 @@ public class SecurityConfig {
         // Solución: Obtenemos el builder, lo configuramos en una línea y luego lo construimos en otra.
         AuthenticationManagerBuilder builder = httpSecurity.getSharedObject(AuthenticationManagerBuilder.class);
         
-        builder.userDetailsService(userDetailsService())
+        builder.userDetailsService(userDetailsService)
                 .passwordEncoder(passwordEncoder);
                 
         return builder.build();
